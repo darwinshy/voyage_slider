@@ -1,7 +1,10 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:voyageslider/button.dart';
 import 'package:voyageslider/filter.dart';
-import 'package:voyageslider/images.dart';
+import 'package:voyageslider/constant.dart';
 
 class Rotating3DSlider extends StatefulWidget {
   const Rotating3DSlider({super.key});
@@ -12,23 +15,21 @@ class Rotating3DSlider extends StatefulWidget {
 
 class _Rotating3DSliderState extends State<Rotating3DSlider> with TickerProviderStateMixin {
   double currentPage = 0;
-  final PageController _pageController = PageController(viewportFraction: 0.3, keepPage: true, initialPage: 1);
+  final PageController _pageController = PageController(viewportFraction: 0.3, keepPage: true, initialPage: images.length ~/ 2);
+  final PageController _titleController = PageController(viewportFraction: 0.3, keepPage: true, initialPage: images.length ~/ 2);
+
   late AnimationController _animationController;
 
   @override
   void initState() {
-    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
-
-    _pageController.addListener(() => setState(() => currentPage = _pageController.page!));
-
     super.initState();
+
+    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
+    _pageController.addListener(() => setState(() => currentPage = _pageController.page!));
   }
 
   @override
   Widget build(BuildContext context) {
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-
     return Scaffold(
       body: Stack(
         children: [
@@ -40,25 +41,74 @@ class _Rotating3DSliderState extends State<Rotating3DSlider> with TickerProvider
             value: currentPage,
             child: SliderBuilder(pageController: _pageController, animationController: _animationController),
           ),
-          Positioned(
-            top: height * 0.5,
-            left: width * 0.2,
-            child: IconButton(
-              iconSize: 72,
-              icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-              onPressed: () => _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeIn),
-            ),
+          Provider.value(
+            value: currentPage,
+            child: ImageTitleContainer(titleController: _titleController, pageController: _pageController),
           ),
-          Positioned(
-            top: height * 0.5,
-            right: width * 0.2,
-            child: IconButton(
-              iconSize: 72,
-              icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-              onPressed: () => _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeIn),
-            ),
-          ),
+          RightArrowButton(pageController: _pageController, titleController: _titleController),
+          LeftArrowButton(pageController: _pageController, titleController: _titleController),
         ],
+      ),
+    );
+  }
+}
+
+class ImageTitleContainer extends StatefulWidget {
+  const ImageTitleContainer({super.key, required this.titleController, required this.pageController});
+
+  final PageController titleController;
+  final PageController pageController;
+
+  @override
+  State<ImageTitleContainer> createState() => _ImageTitleContainerState();
+}
+
+class _ImageTitleContainerState extends State<ImageTitleContainer> with SingleTickerProviderStateMixin {
+  AnimationController? animationController;
+  Animation? animation;
+
+  @override
+  void initState() {
+    super.initState();
+    animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
+    animation = Tween(begin: 0.0, end: 1.0).animate(animationController!);
+
+    animationController!.forward();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    int currentPage = Provider.of<double>(context).toInt();
+
+    return AnimatedBuilder(
+      animation: animationController!,
+      builder: (context, child) {
+        log(animationController!.value.toString());
+        return Transform(
+          transform: Matrix4.translationValues((100 * (1 - animation!.value).toDouble()), 0.0, 0.0),
+          child: child,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.all(100),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: SizedBox(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  images[currentPage]['title'],
+                  style: const TextStyle(color: Colors.white, fontSize: 50, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  images[currentPage]['subtitle'],
+                  style: const TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -76,10 +126,9 @@ class SliderBuilder extends StatelessWidget {
       margin: const EdgeInsets.all(100),
       child: PageView.builder(
         pageSnapping: true,
-        physics: const BouncingScrollPhysics(),
         scrollDirection: Axis.horizontal,
         controller: pageController,
-        itemCount: IMAGES.length,
+        itemCount: images.length,
         itemBuilder: (context, index) => PageItem(index: index, animationController: animationController),
       ),
     );
@@ -95,6 +144,7 @@ class PageItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     double currentPage = Provider.of<double>(context);
+
     double diff = currentPage - index;
 
     Matrix4 transform = Matrix4.identity()
@@ -109,16 +159,23 @@ class PageItem extends StatelessWidget {
       animation: animationController,
       builder: (context, child) => Opacity(
         opacity: opacity,
-        child: Transform(
-          transform: transform,
-          alignment: Alignment.center,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(5),
-              image: DecorationImage(fit: BoxFit.cover, image: (IMAGES[index] as Image).image),
-            ),
-          ),
-        ),
+        child: Transform(transform: transform, alignment: Alignment.center, child: ImageBox(index: index)),
+      ),
+    );
+  }
+}
+
+class ImageBox extends StatelessWidget {
+  const ImageBox({Key? key, required this.index}) : super(key: key);
+
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(5),
+        image: DecorationImage(fit: BoxFit.cover, image: (images[index]['image'] as Image).image),
       ),
     );
   }
