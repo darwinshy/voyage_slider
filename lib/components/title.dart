@@ -15,6 +15,9 @@ class _ImageTitleContainerState extends State<TitleContainer> with SingleTickerP
   AnimationController? animationController;
   Animation? animation;
 
+  GlobalKey _titleKey = GlobalKey();
+  GlobalKey _subtitleKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +31,8 @@ class _ImageTitleContainerState extends State<TitleContainer> with SingleTickerP
     }
 
     double width = MediaQuery.of(context).size.width;
+    double height = MediaQuery.of(context).size.height;
+
     int currentPage = Provider.of<double>(context).round();
 
     double value = (widget.pageController.page! % 1).abs();
@@ -36,35 +41,44 @@ class _ImageTitleContainerState extends State<TitleContainer> with SingleTickerP
       value = 1 - value;
     }
 
-    double transitionValue = 1 - (value * 2);
+    double transitionValue = (1 - (value * 2));
+    double clampedValue = transitionValue.clamp(0, 1);
 
     return AnimatedBuilder(
       animation: animationController!,
-      builder: (context, child) => Positioned(
-        bottom: transitionValue * 100,
-        left: width / 2 - 212.25,
-        child: Opacity(opacity: transitionValue, child: child),
-      ),
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Container(
-          margin: const EdgeInsets.all(100),
-          child: SizedBox(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  images[currentPage]['title'],
-                  style: const TextStyle(color: Colors.white, fontSize: 50, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  images[currentPage]['subtitle'],
-                  style: const TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              ],
+      builder: (context, child) => Stack(
+        children: [
+          AnimatedPositioned(
+            key: _titleKey,
+            duration: const Duration(milliseconds: 100),
+            curve: Curves.easeOut,
+            bottom: clampedValue * 300 + clampedValue * 20,
+            left: width / 2 - width / 10,
+            child: Opacity(
+              opacity: transitionValue,
+              child: Text(
+                images[currentPage]['title'],
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 50, fontWeight: FontWeight.bold),
+              ),
             ),
           ),
-        ),
+          AnimatedPositioned(
+            key: _subtitleKey,
+            duration: const Duration(milliseconds: 100),
+            curve: Curves.easeOut,
+            bottom: clampedValue * 330 - clampedValue * 40,
+            left: width / 2 - width / 10,
+            child: Opacity(
+              opacity: transitionValue,
+              child: Text(
+                images[currentPage]['subtitle'],
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+              ),
+            ),
+          )
+        ],
       ),
     );
   }

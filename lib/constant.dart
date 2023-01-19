@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 final List<dynamic> images = [
   {
     'title': 'One Image',
-    'subtitle': 'This is the first image',
+    'subtitle': 'This is the first image, and it is the longest subtitle',
     'image': Image.asset('assets/one.jpg'),
   },
   {

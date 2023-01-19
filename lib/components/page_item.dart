@@ -20,7 +20,7 @@ class PageItem extends StatelessWidget {
       ..translate(0.0, 0.0, diff.abs())
       ..rotateY(-diff * 0.8);
 
-    double opacity = (1 - diff.abs()).clamp(0.2, 1.0);
+    double opacity = (1 - diff.abs()).clamp(0.6, 1.0);
 
     return AnimatedBuilder(
       animation: animationController,
