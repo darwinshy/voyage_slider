@@ -12,7 +12,7 @@ class BackdropImageFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    int currentPage = Provider.of<double>(context).toInt();
+    int currentPage = Provider.of<double>(context).round();
 
     return Positioned.fill(
       child: AnimatedBuilder(

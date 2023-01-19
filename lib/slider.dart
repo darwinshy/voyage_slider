@@ -16,7 +16,6 @@ class Rotating3DSlider extends StatefulWidget {
 class _Rotating3DSliderState extends State<Rotating3DSlider> with TickerProviderStateMixin {
   double currentPage = 0;
   final PageController _pageController = PageController(viewportFraction: 0.3, keepPage: true, initialPage: images.length ~/ 2);
-  final PageController _titleController = PageController(viewportFraction: 0.3, keepPage: true, initialPage: images.length ~/ 2);
 
   late AnimationController _animationController;
 
@@ -43,27 +42,26 @@ class _Rotating3DSliderState extends State<Rotating3DSlider> with TickerProvider
           ),
           Provider.value(
             value: currentPage,
-            child: ImageTitleContainer(titleController: _titleController, pageController: _pageController),
+            child: TitleContainer(pageController: _pageController),
           ),
-          RightArrowButton(pageController: _pageController, titleController: _titleController),
-          LeftArrowButton(pageController: _pageController, titleController: _titleController),
+          RightArrowButton(pageController: _pageController),
+          LeftArrowButton(pageController: _pageController),
         ],
       ),
     );
   }
 }
 
-class ImageTitleContainer extends StatefulWidget {
-  const ImageTitleContainer({super.key, required this.titleController, required this.pageController});
+class TitleContainer extends StatefulWidget {
+  const TitleContainer({super.key, required this.pageController});
 
-  final PageController titleController;
   final PageController pageController;
 
   @override
-  State<ImageTitleContainer> createState() => _ImageTitleContainerState();
+  State<TitleContainer> createState() => _ImageTitleContainerState();
 }
 
-class _ImageTitleContainerState extends State<ImageTitleContainer> with SingleTickerProviderStateMixin {
+class _ImageTitleContainerState extends State<TitleContainer> with SingleTickerProviderStateMixin {
   AnimationController? animationController;
   Animation? animation;
 
@@ -71,28 +69,36 @@ class _ImageTitleContainerState extends State<ImageTitleContainer> with SingleTi
   void initState() {
     super.initState();
     animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
-    animation = Tween(begin: 0.0, end: 1.0).animate(animationController!);
-
-    animationController!.forward();
   }
 
   @override
   Widget build(BuildContext context) {
-    int currentPage = Provider.of<double>(context).toInt();
+    if (widget.pageController.page == null) {
+      return const SizedBox();
+    }
+
+    double width = MediaQuery.of(context).size.width;
+    int currentPage = Provider.of<double>(context).round();
+
+    double value = (widget.pageController.page! % 1).abs();
+
+    if (value > 0.5) {
+      value = 1 - value;
+    }
+
+    double transitionValue = 1 - (value * 2);
 
     return AnimatedBuilder(
       animation: animationController!,
-      builder: (context, child) {
-        log(animationController!.value.toString());
-        return Transform(
-          transform: Matrix4.translationValues((100 * (1 - animation!.value).toDouble()), 0.0, 0.0),
-          child: child,
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.all(100),
-        child: Align(
-          alignment: Alignment.bottomCenter,
+      builder: (context, child) => Positioned(
+        bottom: transitionValue * 100,
+        left: width / 2 - 212.25,
+        child: Opacity(opacity: transitionValue, child: child),
+      ),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Container(
+          margin: const EdgeInsets.all(100),
           child: SizedBox(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
